@@ -9,12 +9,16 @@
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 const float GRAVITY = -0.0008f;
-const float JUMP_VELOCITY = 0.4f;
+const float JUMP_VELOCITY = 0.6f;
 const float MOVE_SPEED = 0.15f;
 const int INITIAL_LIVES = 3;
 const int COLLECTABLES_COUNT = 7;
 const float LAVA_INITIAL_SPEED = 0.02f;
 const float LAVA_SPEED_INCREMENT = 0.0001f;
+const float restartButtonX = WINDOW_WIDTH / 2 - 50;
+const float restartButtonY = (WINDOW_HEIGHT / 2) - 80;
+float restartButtonWidth = 100;
+float restartButtonHeight = 30;
 
 
 enum GameState { PLAYING, WIN, LOSE };
@@ -632,15 +636,26 @@ void drawHUD() {
 void drawGameOver() {
     glColor3f(0.8f, 0.1f, 0.1f);
     if (gameState == WIN) {
-        drawText(WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2, "YOU WIN!");
+        drawText(WINDOW_WIDTH/2 - 50, WINDOW_HEIGHT/1.5, "YOU WIN!");
     } else {
-        drawText(WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2, "GAME OVER!");
+        drawText(WINDOW_WIDTH/2 - 50, WINDOW_HEIGHT/1.5, "GAME OVER!");
     }
     
     char scoreText[50];
     sprintf(scoreText, "Final Score: %d", player.score);
     glColor3f(1.0f, 1.0f, 1.0f);
-    drawText(WINDOW_WIDTH/2 - 80, WINDOW_HEIGHT/2 - 40, scoreText);
+    drawText(WINDOW_WIDTH/2 - 60, WINDOW_HEIGHT/2 - 40, scoreText);
+   glColor3f(0.1f, 0.5f, 0.1f);  // Green color for the button
+       glBegin(GL_QUADS);
+       glVertex2f(restartButtonX, restartButtonY);
+       glVertex2f(restartButtonX + restartButtonWidth, restartButtonY);
+       glVertex2f(restartButtonX + restartButtonWidth, restartButtonY + restartButtonHeight);
+       glVertex2f(restartButtonX, restartButtonY + restartButtonHeight);
+       glEnd();
+       
+       glColor3f(1.0f, 1.0f, 1.0f);  // White text
+       drawText(restartButtonX + 20, restartButtonY + 10, "Restart");
+
 }
 
 // Collision detection
@@ -931,6 +946,31 @@ void specialKeyUp(int key, int x, int y) {
     if (key == GLUT_KEY_RIGHT) keys['d'] = false;
     if (key == GLUT_KEY_UP) keys['w'] = false;
 }
+  void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && (gameState == WIN || gameState == LOSE)) {
+        int glY = WINDOW_HEIGHT - y; 
+        
+        // Now check if the click is within the button bounds using OpenGL coordinates
+        if (x >= restartButtonX && x <= restartButtonX + restartButtonWidth &&
+            glY >= restartButtonY && glY <= restartButtonY + restartButtonHeight) {
+            // Restart the game (same code as in keyDown for 'r')
+            platforms.clear();
+            collectables.clear();
+            rocks.clear();
+            powerUps.clear();
+            lavaHeight = 0.0f;
+            lavaSpeed = LAVA_INITIAL_SPEED;
+            gameTime = 0;
+            lastRockSpawn = 0;
+            powerUpSpawnTime = 0;
+            gameState = PLAYING;
+            init();
+            glutPostRedisplay();  // Redraw the screen
+        }
+    }
+}
+
+   
 
 // Main function
 int main(int argc, char** argv) {
@@ -948,6 +988,7 @@ int main(int argc, char** argv) {
     glutSpecialFunc(specialKeyDown);
     glutSpecialUpFunc(specialKeyUp);
     glutTimerFunc(16, update, 0);
+    glutMouseFunc(mouse);
     
     glutMainLoop();
     return 0;
