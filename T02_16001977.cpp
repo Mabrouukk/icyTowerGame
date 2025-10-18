@@ -1,3 +1,4 @@
+#define GL_SILENCE_DEPRECATION
 #include <GLUT/glut.h>
 #include <cmath>
 #include <cstdlib>
@@ -12,17 +13,17 @@ const float JUMP_VELOCITY = 0.6f;
 const float MOVE_SPEED = 0.15f;
 const int INITIAL_LIVES = 3;
 const int COLLECTABLES_COUNT = 7;
-const float LAVA_INITIAL_SPEED = 0.1f;
+const float LAVA_INITIAL_SPEED = 0.01f;
 const float LAVA_SPEED_INCREMENT = 0.0005f;
 
 // Button positions
 const float startButtonX = WINDOW_WIDTH / 2 - 75;
 const float startButtonY = WINDOW_HEIGHT / 2 - 20;
-const float startButtonWidth = 200;
+const float startButtonWidth = 160;
 const float startButtonHeight = 50;
 
 const float restartButtonX = WINDOW_WIDTH / 2 - 75;
-const float restartButtonY = (WINDOW_HEIGHT / 2) - 20;
+const float restartButtonY = (WINDOW_HEIGHT / 2) - 80;
 const float restartButtonWidth = 150;
 const float restartButtonHeight = 50;
 
@@ -102,7 +103,7 @@ int powerUpSpawnTime = 0;
 bool keys[256];
 
 void init() {
-    glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT);
@@ -193,6 +194,7 @@ void drawPlayer() {
         glEnd();
     }
     
+    // Body (quad)
     glColor3f(0.15f, 0.65f, 0.25f);
     glBegin(GL_QUADS);
     glVertex2f(x - w/2, y);
@@ -201,6 +203,7 @@ void drawPlayer() {
     glVertex2f(x - w/2, y + h * 0.6f);
     glEnd();
     
+    // Head (circle)
     glColor3f(0.95f, 0.75f, 0.55f);
     glBegin(GL_TRIANGLE_FAN);
     glVertex2f(x, y + h * 0.85f);
@@ -210,6 +213,35 @@ void drawPlayer() {
     }
     glEnd();
     
+    // Cap (polygon - trapezoid shape)
+    glColor3f(0.85f, 0.15f, 0.15f);
+    glBegin(GL_POLYGON);
+    glVertex2f(x - w/2.5f, y + h * 0.95f);
+    glVertex2f(x + w/2.5f, y + h * 0.95f);
+    glVertex2f(x + w/2.2f, y + h * 1.05f);
+    glVertex2f(x - w/2.2f, y + h * 1.05f);
+    glEnd();
+    
+    // Cap brim (quad)
+    glColor3f(0.75f, 0.1f, 0.1f);
+    glBegin(GL_QUADS);
+    glVertex2f(x - w/2, y + h * 0.93f);
+    glVertex2f(x + w/2, y + h * 0.93f);
+    glVertex2f(x + w/2, y + h * 0.97f);
+    glVertex2f(x - w/2, y + h * 0.97f);
+    glEnd();
+    
+    // Cap button on top (triangle fan - small circle)
+    glColor3f(0.9f, 0.9f, 0.9f);
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f(x, y + h * 1.05f);
+    for (int i = 0; i <= 12; i++) {
+        float angle = i * 2.0f * 3.14159f / 12;
+        glVertex2f(x + cos(angle) * 3, y + h * 1.05f + sin(angle) * 3);
+    }
+    glEnd();
+    
+    // Eyes (points)
     glColor3f(0.1f, 0.1f, 0.1f);
     glPointSize(4);
     glBegin(GL_POINTS);
@@ -217,6 +249,7 @@ void drawPlayer() {
     glVertex2f(x + w/6, y + h * 0.88f);
     glEnd();
     
+    // Arms (lines)
     glLineWidth(3);
     glColor3f(0.95f, 0.75f, 0.55f);
     glBegin(GL_LINES);
@@ -322,7 +355,7 @@ void drawRocks() {
 }
 
 void drawLava() {
-    glColor3f(0.95f, 0.25f, 0.05f);
+    glColor3f(1.0f, 0.0f, 0.0f);
     glBegin(GL_QUADS);
     glVertex2f(0, 0);
     glVertex2f(WINDOW_WIDTH, 0);
@@ -330,7 +363,7 @@ void drawLava() {
     glVertex2f(0, lavaHeight);
     glEnd();
     
-    glColor3f(1.0f, 0.45f, 0.1f);
+    glColor3f(1.0f, 0.0f, 0.0f);
     glBegin(GL_TRIANGLES);
     for (int i = 0; i < WINDOW_WIDTH; i += 40) {
         float wave = sin((i + gameTime * 0.1f) * 0.1f) * 10;
@@ -473,66 +506,88 @@ void drawDoor() {
     float y = door.y;
     float w = door.width;
     float h = door.height;
-    
+
+    // Draw the frame first (dark brown)
+    glColor3f(0.20f, 0.12f, 0.04f);
+    glBegin(GL_QUADS);
+    glVertex2f(x - 5, y - 5);
+    glVertex2f(x + w + 5, y - 5);
+    glVertex2f(x + w + 5, y + h + 5);
+    glVertex2f(x - 5, y + h + 5);
+    glEnd();
+
+    // Door open/close transformation
     if (door.unlocked) {
         glPushMatrix();
         glTranslatef(x, y, 0);
         glRotatef(-door.openAnimation * 90, 0, 0, 1);
         glTranslatef(-x, -y, 0);
-        
-        glColor3f(0.35f, 0.22f, 0.08f);
-        glBegin(GL_QUADS);
-        glVertex2f(x, y);
-        glVertex2f(x + w/2, y);
-        glVertex2f(x + w/2, y + h);
-        glVertex2f(x, y + h);
-        glEnd();
-        
-        glPopMatrix();
-        
-        glColor3f(0.5f, 0.5f, 0.5f);
-        glBegin(GL_POLYGON);
-        glVertex2f(x - 5, y);
-        glVertex2f(x + w + 5, y);
-        glVertex2f(x + w + 5, y + h + 10);
-        glVertex2f(x + w/2, y + h + 20);
-        glVertex2f(x - 5, y + h + 10);
-        glEnd();
-        
-    } else {
-        glColor3f(0.35f, 0.22f, 0.08f);
-        glBegin(GL_QUADS);
-        glVertex2f(x, y);
-        glVertex2f(x + w, y);
-        glVertex2f(x + w, y + h);
-        glVertex2f(x, y + h);
-        glEnd();
-        
-        glColor3f(0.5f, 0.5f, 0.5f);
-        glBegin(GL_POLYGON);
-        glVertex2f(x - 5, y);
-        glVertex2f(x + w + 5, y);
-        glVertex2f(x + w + 5, y + h + 10);
-        glVertex2f(x + w/2, y + h + 20);
-        glVertex2f(x - 5, y + h + 10);
-        glEnd();
-        
-        glColor3f(0.9f, 0.75f, 0.2f);
-        glBegin(GL_TRIANGLE_FAN);
-        glVertex2f(x + w/2, y + h/2);
-        for (int i = 0; i <= 20; i++) {
-            float angle = i * 2.0f * 3.14159f / 20;
-            glVertex2f(x + w/2 + cos(angle) * 8, y + h/2 + sin(angle) * 8);
-        }
-        glEnd();
-        
-        glColor3f(0.15f, 0.08f, 0.02f);
-        glBegin(GL_TRIANGLES);
-        glVertex2f(x + w/2 - 3, y + h/2);
-        glVertex2f(x + w/2 + 3, y + h/2);
-        glVertex2f(x + w/2, y + h/2 - 8);
+    }
+
+    // --- Door body (wood gradient) ---
+    glBegin(GL_QUADS);
+    // darker side (simulate shading)
+    glColor3f(0.35f, 0.22f, 0.08f);  // left side
+    glVertex2f(x, y);
+    glVertex2f(x + w * 0.4f, y);
+    glVertex2f(x + w * 0.4f, y + h);
+    glVertex2f(x, y + h);
+
+    // lighter side (simulate light reflection)
+    glColor3f(0.45f, 0.30f, 0.10f);  // right side
+    glVertex2f(x + w * 0.4f, y);
+    glVertex2f(x + w, y);
+    glVertex2f(x + w, y + h);
+    glVertex2f(x + w * 0.4f, y + h);
+    glEnd();
+
+    // --- Decorative horizontal panels (for realism) ---
+    glColor3f(0.25f, 0.15f, 0.05f);
+    for (int i = 1; i <= 3; i++) {
+        float panelY = y + (h / 4.0f) * i;
+        glBegin(GL_LINES);
+        glVertex2f(x + 10, panelY);
+        glVertex2f(x + w - 10, panelY);
         glEnd();
     }
+
+    // --- Door knob (metallic with highlight) ---
+    float knobX = x + w - 15;
+    float knobY = y + h / 2;
+
+    glBegin(GL_TRIANGLE_FAN);
+    glColor3f(0.8f, 0.7f, 0.1f);  // gold base
+    glVertex2f(knobX, knobY);
+    for (int i = 0; i <= 20; i++) {
+        float angle = i * 2.0f * 3.14159f / 20;
+        glColor3f(0.9f, 0.8f, 0.3f);  // light edge
+        glVertex2f(knobX + cos(angle) * 5, knobY + sin(angle) * 5);
+    }
+    glEnd();
+
+    // Small highlight on knob (simulated light)
+    glColor3f(1.0f, 1.0f, 0.6f);
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f(knobX + 1.5f, knobY + 1.5f);
+    for (int i = 0; i <= 20; i++) {
+        float angle = i * 2.0f * 3.14159f / 20;
+        glVertex2f(knobX + 1.5f + cos(angle) * 1.5f, knobY + 1.5f + sin(angle) * 1.5f);
+    }
+    glEnd();
+
+    // --- Door open shadow effect ---
+    if (door.unlocked && door.openAnimation > 0.1f) {
+        glColor4f(0.0f, 0.0f, 0.0f, 0.3f); // semi-transparent
+        glBegin(GL_QUADS);
+        glVertex2f(x + w + 2, y);
+        glVertex2f(x + w + 10, y);
+        glVertex2f(x + w + 10, y + h);
+        glVertex2f(x + w + 2, y + h);
+        glEnd();
+    }
+
+    if (door.unlocked)
+        glPopMatrix();
 }
 
 void drawHUD() {
@@ -585,12 +640,12 @@ void drawHUD() {
     
     glColor3f(0.95f, 0.95f, 0.95f);
     char scoreText[50];
-    sprintf(scoreText, "Score: %d", player.score);
+    snprintf(scoreText, sizeof(scoreText), "Score: %d", player.score);
     drawText(WINDOW_WIDTH - 150, WINDOW_HEIGHT - 25, scoreText);
 }
 
 void drawMainMenu() {
-    glColor3f(0.08f, 0.08f, 0.12f);
+    glColor3f(0.00f, 0.0f, 0.0f);
     glBegin(GL_QUADS);
     glVertex2f(0, 0);
     glVertex2f(WINDOW_WIDTH, 0);
@@ -600,7 +655,7 @@ void drawMainMenu() {
     
     // Title
     glColor3f(0.95f, 0.85f, 0.2f);
-    drawLargeText(WINDOW_WIDTH/2 - 70, WINDOW_HEIGHT - 100, "ICY TOWER");
+    drawLargeText(WINDOW_WIDTH/2 - 80, WINDOW_HEIGHT - 100, "ICY TOWER");
     
     glColor3f(0.7f, 0.7f, 0.75f);
     drawText(WINDOW_WIDTH/2 - 90, WINDOW_HEIGHT - 140, "ASCEND TO VICTORY");
@@ -626,7 +681,7 @@ void drawMainMenu() {
     glEnd();
     
     glColor3f(1.0f, 1.0f, 1.0f);
-    drawLargeText(startButtonX + 20, startButtonY + 18, "START GAME");
+    drawLargeText(startButtonX , startButtonY + 18, "START GAME");
     
     // Instructions
     glColor3f(0.6f, 0.6f, 0.65f);
@@ -649,7 +704,7 @@ void drawMainMenu() {
 void drawGameOver() {
     if (gameState == WIN) {
         glColor3f(0.2f, 0.8f, 0.3f);
-        drawLargeText(WINDOW_WIDTH/2 - 70, WINDOW_HEIGHT/1.5, "YOU WIN!");
+        drawLargeText(WINDOW_WIDTH/2 - 50, WINDOW_HEIGHT/1.5, "YOU WIN!");
     } else {
         glColor3f(0.95f, 0.2f, 0.2f);
         drawLargeText(WINDOW_WIDTH/2 - 70, WINDOW_HEIGHT/1.5, "GAME OVER!");
@@ -658,7 +713,7 @@ void drawGameOver() {
     char scoreText[50];
     sprintf(scoreText, "Final Score: %d", player.score);
     glColor3f(0.9f, 0.9f, 0.95f);
-    drawText(WINDOW_WIDTH/2 - 70, WINDOW_HEIGHT/2 - 40, scoreText);
+    drawText(WINDOW_WIDTH/2 - 50, WINDOW_HEIGHT/2 , scoreText);
     
     // Restart button with gradient
     glColor3f(0.15f, 0.55f, 0.25f);
@@ -681,8 +736,9 @@ void drawGameOver() {
     glEnd();
     
     glColor3f(1.0f, 1.0f, 1.0f);
-    drawLargeText(restartButtonX + 30, restartButtonY + 18, "PLAY AGAIN");
+    drawLargeText(restartButtonX , restartButtonY + 10, "PLAY AGAIN");
 }
+
 
 bool checkCollision(float x1, float y1, float w1, float h1, float x2, float y2, float w2, float h2) {
     return (x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2);
@@ -696,6 +752,14 @@ bool checkCircleCollision(float x1, float y1, float r1, float x2, float y2, floa
 }
 
 void update(int value) {
+    // Update animation timer even on menu
+    if (gameState == MENU) {
+        gameTime++;
+        glutPostRedisplay();
+        glutTimerFunc(16, update, 0);
+        return;
+    }
+    
     if (gameState != PLAYING) {
         glutTimerFunc(16, update, 0);
         return;
