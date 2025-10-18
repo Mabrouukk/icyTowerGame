@@ -182,57 +182,95 @@ void drawPlayer() {
     float y = player.y;
     float w = player.width;
     float h = player.height;
-    
+
+    // Power-up aura (glow)
     if (player.activePowerUp == 1) {
-        glColor3f(0.2f, 0.6f, 1.0f);
+        glColor4f(0.2f, 0.6f, 1.0f, 0.4f); // soft blue aura with transparency
         glBegin(GL_TRIANGLE_FAN);
-        glVertex2f(x, y + h/2);
-        for (int i = 0; i <= 20; i++) {
-            float angle = i * 2.0f * 3.14159f / 20;
-            glVertex2f(x + cos(angle) * (w/2 + 8), y + h/2 + sin(angle) * (h/2 + 8));
+        glVertex2f(x, y + h / 2);
+        for (int i = 0; i <= 40; i++) {
+            float angle = i * 2.0f * 3.14159f / 40;
+            glVertex2f(x + cos(angle) * (w / 2 + 10), y + h / 2 + sin(angle) * (h / 2 + 10));
         }
         glEnd();
     }
-    
-    // Body (quad)
-    glColor3f(0.15f, 0.65f, 0.25f);
+
+    // === BODY (Shirt) ===
+    glColor3f(0.2f, 0.4f, 0.9f); // bright blue shirt
     glBegin(GL_QUADS);
-    glVertex2f(x - w/2, y);
-    glVertex2f(x + w/2, y);
-    glVertex2f(x + w/2, y + h * 0.6f);
-    glVertex2f(x - w/2, y + h * 0.6f);
+    glVertex2f(x - w / 2, y + h * 0.25f);
+    glVertex2f(x + w / 2, y + h * 0.25f);
+    glVertex2f(x + w / 2, y + h * 0.7f);
+    glVertex2f(x - w / 2, y + h * 0.7f);
     glEnd();
-    
-    // Head (circle)
-    glColor3f(0.95f, 0.75f, 0.55f);
+
+    // === LEGS ===
+    glColor3f(0.1f, 0.1f, 0.2f); // dark navy pants
+    float legWidth = w / 3.5f;
+    float legHeight = h * 0.25f;
+
+    // Left leg
+    glBegin(GL_QUADS);
+    glVertex2f(x - legWidth - 2, y);
+    glVertex2f(x - 2, y);
+    glVertex2f(x - 2, y + legHeight);
+    glVertex2f(x - legWidth - 2, y + legHeight);
+    glEnd();
+
+    // Right leg
+    glBegin(GL_QUADS);
+    glVertex2f(x + 2, y);
+    glVertex2f(x + legWidth + 2, y);
+    glVertex2f(x + legWidth + 2, y + legHeight);
+    glVertex2f(x + 2, y + legHeight);
+    glEnd();
+
+    // === SHOES ===
+    glColor3f(0.2f, 0.05f, 0.05f); // brown shoes
+    float shoeHeight = 4.0f;
+    glBegin(GL_QUADS);
+    // left shoe
+    glVertex2f(x - legWidth - 2, y);
+    glVertex2f(x - 2, y);
+    glVertex2f(x - 2, y - shoeHeight);
+    glVertex2f(x - legWidth - 2, y - shoeHeight);
+    // right shoe
+    glVertex2f(x + 2, y);
+    glVertex2f(x + legWidth + 2, y);
+    glVertex2f(x + legWidth + 2, y - shoeHeight);
+    glVertex2f(x + 2, y - shoeHeight);
+    glEnd();
+
+    // === HEAD ===
+    glColor3f(0.95f, 0.78f, 0.55f); // lighter, warmer skin tone
     glBegin(GL_TRIANGLE_FAN);
-    glVertex2f(x, y + h * 0.85f);
+    glVertex2f(x, y + h * 0.88f);
     for (int i = 0; i <= 20; i++) {
         float angle = i * 2.0f * 3.14159f / 20;
-        glVertex2f(x + cos(angle) * w/3, y + h * 0.85f + sin(angle) * w/3);
+        glVertex2f(x + cos(angle) * w / 3, y + h * 0.88f + sin(angle) * w / 3);
     }
     glEnd();
-    
-    // Cap (polygon - trapezoid shape)
-    glColor3f(0.85f, 0.15f, 0.15f);
+
+    // === CAP ===
+    glColor3f(0.8f, 0.1f, 0.1f); // deep red
     glBegin(GL_POLYGON);
-    glVertex2f(x - w/2.5f, y + h * 0.95f);
-    glVertex2f(x + w/2.5f, y + h * 0.95f);
-    glVertex2f(x + w/2.2f, y + h * 1.05f);
-    glVertex2f(x - w/2.2f, y + h * 1.05f);
+    glVertex2f(x - w / 2.5f, y + h * 0.97f);
+    glVertex2f(x + w / 2.5f, y + h * 0.97f);
+    glVertex2f(x + w / 2.2f, y + h * 1.05f);
+    glVertex2f(x - w / 2.2f, y + h * 1.05f);
     glEnd();
-    
-    // Cap brim (quad)
-    glColor3f(0.75f, 0.1f, 0.1f);
+
+    // Cap brim
+    glColor3f(0.6f, 0.05f, 0.05f);
     glBegin(GL_QUADS);
-    glVertex2f(x - w/2, y + h * 0.93f);
-    glVertex2f(x + w/2, y + h * 0.93f);
-    glVertex2f(x + w/2, y + h * 0.97f);
-    glVertex2f(x - w/2, y + h * 0.97f);
+    glVertex2f(x - w / 2, y + h * 0.95f);
+    glVertex2f(x + w / 2, y + h * 0.95f);
+    glVertex2f(x + w / 2, y + h * 0.97f);
+    glVertex2f(x - w / 2, y + h * 0.97f);
     glEnd();
-    
-    // Cap button on top (triangle fan - small circle)
-    glColor3f(0.9f, 0.9f, 0.9f);
+
+    // Cap button
+    glColor3f(0.95f, 0.95f, 0.95f);
     glBegin(GL_TRIANGLE_FAN);
     glVertex2f(x, y + h * 1.05f);
     for (int i = 0; i <= 12; i++) {
@@ -240,55 +278,72 @@ void drawPlayer() {
         glVertex2f(x + cos(angle) * 3, y + h * 1.05f + sin(angle) * 3);
     }
     glEnd();
-    
-    // Eyes (points)
+
+    // === EYES ===
     glColor3f(0.1f, 0.1f, 0.1f);
     glPointSize(4);
     glBegin(GL_POINTS);
-    glVertex2f(x - w/6, y + h * 0.88f);
-    glVertex2f(x + w/6, y + h * 0.88f);
+    glVertex2f(x - w / 6, y + h * 0.88f);
+    glVertex2f(x + w / 6, y + h * 0.88f);
     glEnd();
-    
-    // Arms (lines)
+
+    // === ARMS ===
     glLineWidth(3);
-    glColor3f(0.95f, 0.75f, 0.55f);
+    glColor3f(0.95f, 0.78f, 0.55f);
     glBegin(GL_LINES);
-    glVertex2f(x - w/2, y + h * 0.5f);
-    glVertex2f(x - w/2 - 8, y + h * 0.3f);
-    glVertex2f(x + w/2, y + h * 0.5f);
-    glVertex2f(x + w/2 + 8, y + h * 0.3f);
+    glVertex2f(x - w / 2, y + h * 0.55f);
+    glVertex2f(x - w / 2 - 8, y + h * 0.35f);
+    glVertex2f(x + w / 2, y + h * 0.55f);
+    glVertex2f(x + w / 2 + 8, y + h * 0.35f);
     glEnd();
 }
 
 void drawPlatforms() {
     for (auto& p : platforms) {
         if (p.destroyed) continue;
-        
+
+        float x = p.x;
+        float y = p.y;
+        float w = p.width;
+        float h = p.height;
+
+        // Base color (wood or any solid color)
         glColor3f(0.45f, 0.35f, 0.25f);
-        glBegin(GL_QUADS);
-        glVertex2f(p.x, p.y);
-        glVertex2f(p.x + p.width, p.y);
-        glVertex2f(p.x + p.width, p.y + p.height);
-        glVertex2f(p.x, p.y + p.height);
-        glEnd();
-        
-        glColor3f(0.6f, 0.5f, 0.35f);
-        glBegin(GL_TRIANGLES);
-        glVertex2f(p.x, p.y + p.height);
-        glVertex2f(p.x + p.width/2, p.y + p.height);
-        glVertex2f(p.x + p.width/4, p.y + p.height + 3);
-        
-        glVertex2f(p.x + p.width/2, p.y + p.height);
-        glVertex2f(p.x + p.width, p.y + p.height);
-        glVertex2f(p.x + p.width * 0.75f, p.y + p.height + 3);
-        glEnd();
-        
-        glColor3f(0.3f, 0.2f, 0.1f);
+
         glBegin(GL_POLYGON);
-        glVertex2f(p.x, p.y);
-        glVertex2f(p.x + 5, p.y);
-        glVertex2f(p.x + 5, p.y + p.height);
-        glVertex2f(p.x, p.y + p.height);
+        // Left vertical leg
+        glVertex2f(x, y);
+        glVertex2f(x + w * 0.15f, y);
+        glVertex2f(x + w * 0.15f, y + h);
+
+        // Left diagonal up to middle top
+        glVertex2f(x + w * 0.4f, y + h * 0.4f);
+
+        // Center bottom of M (the dip)
+        glVertex2f(x + w * 0.5f, y + h * 0.7f);
+
+        // Right diagonal up
+        glVertex2f(x + w * 0.6f, y + h * 0.4f);
+
+        // Right vertical leg
+        glVertex2f(x + w * 0.85f, y + h);
+        glVertex2f(x + w * 0.85f, y);
+        glVertex2f(x + w, y);
+        glEnd();
+
+        // Optional darker outline for shape clarity
+        glLineWidth(2);
+        glColor3f(0.25f, 0.18f, 0.1f);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f(x, y);
+        glVertex2f(x + w * 0.15f, y);
+        glVertex2f(x + w * 0.15f, y + h);
+        glVertex2f(x + w * 0.4f, y + h * 0.4f);
+        glVertex2f(x + w * 0.5f, y + h * 0.7f);
+        glVertex2f(x + w * 0.6f, y + h * 0.4f);
+        glVertex2f(x + w * 0.85f, y + h);
+        glVertex2f(x + w * 0.85f, y);
+        glVertex2f(x + w, y);
         glEnd();
     }
 }
@@ -355,7 +410,7 @@ void drawRocks() {
 }
 
 void drawLava() {
-    glColor3f(1.0f, 0.0f, 0.0f);
+    glColor3f(1.0f, 0.4f, 0.0f); 
     glBegin(GL_QUADS);
     glVertex2f(0, 0);
     glVertex2f(WINDOW_WIDTH, 0);
@@ -363,7 +418,7 @@ void drawLava() {
     glVertex2f(0, lavaHeight);
     glEnd();
     
-    glColor3f(1.0f, 0.0f, 0.0f);
+    glColor3f(1.0f, 0.4f, 0.0f); 
     glBegin(GL_TRIANGLES);
     for (int i = 0; i < WINDOW_WIDTH; i += 40) {
         float wave = sin((i + gameTime * 0.1f) * 0.1f) * 10;
