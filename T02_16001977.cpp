@@ -5,7 +5,6 @@
 #include <vector>
 #include <string>
 
-// Game constants
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 const float GRAVITY = -0.0008f;
@@ -13,17 +12,22 @@ const float JUMP_VELOCITY = 0.6f;
 const float MOVE_SPEED = 0.15f;
 const int INITIAL_LIVES = 3;
 const int COLLECTABLES_COUNT = 7;
-const float LAVA_INITIAL_SPEED = 0.02f;
-const float LAVA_SPEED_INCREMENT = 0.0001f;
-const float restartButtonX = WINDOW_WIDTH / 2 - 50;
+const float LAVA_INITIAL_SPEED = 0.008f;
+const float LAVA_SPEED_INCREMENT = 0.00003f;
+
+// Button positions
+const float startButtonX = WINDOW_WIDTH / 2 - 75;
+const float startButtonY = WINDOW_HEIGHT / 2 - 20;
+const float startButtonWidth = 200;
+const float startButtonHeight = 50;
+
+const float restartButtonX = WINDOW_WIDTH / 2 - 75;
 const float restartButtonY = (WINDOW_HEIGHT / 2) - 80;
-float restartButtonWidth = 100;
-float restartButtonHeight = 30;
+const float restartButtonWidth = 150;
+const float restartButtonHeight = 50;
 
-
-enum GameState { PLAYING, WIN, LOSE };
-GameState gameState = PLAYING;
-
+enum GameState { MENU, PLAYING, WIN, LOSE };
+GameState gameState = MENU;
 
 struct Player {
     float x, y;
@@ -33,17 +37,15 @@ struct Player {
     int lives;
     int score;
     bool hasKey;
-    int activePowerUp; 
+    int activePowerUp;
     float powerUpTimer;
 } player;
-
 
 struct Platform {
     float x, y;
     float width, height;
     bool destroyed;
 };
-
 
 struct Collectable {
     float x, y;
@@ -52,7 +54,6 @@ struct Collectable {
     float rotation;
 };
 
-
 struct Rock {
     float x, y;
     float size;
@@ -60,16 +61,14 @@ struct Rock {
     bool active;
 };
 
-
 struct PowerUp {
     float x, y;
     float size;
-    int type; // 1=shield, 2=slow_lava
+    int type;
     bool collected;
     float timer;
     float rotation;
 };
-
 
 struct Key {
     float x, y;
@@ -79,7 +78,6 @@ struct Key {
     float rotation;
 };
 
-
 struct Door {
     float x, y;
     float width, height;
@@ -87,7 +85,6 @@ struct Door {
     float openAnimation;
 };
 
-// Game objects
 std::vector<Platform> platforms;
 std::vector<Collectable> collectables;
 std::vector<Rock> rocks;
@@ -95,28 +92,23 @@ std::vector<PowerUp> powerUps;
 Key key;
 Door door;
 
-// Lava
 float lavaHeight = 0.0f;
 float lavaSpeed = LAVA_INITIAL_SPEED;
 
-// Timing
 int lastRockSpawn = 0;
 int gameTime = 0;
 int powerUpSpawnTime = 0;
 
-// Input
 bool keys[256];
 
-// Initialize game
 void init() {
-    glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
+    glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT);
     
     srand(time(0));
     
-    // Initialize player
     player.x = WINDOW_WIDTH / 2;
     player.y = 50;
     player.width = 30;
@@ -129,14 +121,13 @@ void init() {
     player.activePowerUp = 0;
     player.powerUpTimer = 0;
     
-    // Create platforms with varying sizes
     float platformY = 100;
     float platformWidths[] = {80, 120, 100, 90, 110, 85, 95, 105, 80, 90};
     
     for (int i = 0; i < 10; i++) {
         Platform p;
         p.width = platformWidths[i];
-        p.height = 15;
+        p.height = 20;
         p.y = platformY;
         p.x = rand() % (WINDOW_WIDTH - (int)p.width);
         p.destroyed = false;
@@ -144,7 +135,6 @@ void init() {
         platformY += 55;
     }
     
-    // Create collectables
     for (int i = 0; i < COLLECTABLES_COUNT; i++) {
         Collectable c;
         c.x = rand() % (WINDOW_WIDTH - 40) + 20;
@@ -155,25 +145,21 @@ void init() {
         collectables.push_back(c);
     }
     
-    // Initialize key
     key.spawned = false;
     key.collected = false;
     key.size = 20;
     key.rotation = 0;
     
-    // Initialize door
     door.x = WINDOW_WIDTH / 2 - 40;
-    door.y = platformY + 20;
+    door.y = platformY - 100;
     door.width = 80;
     door.height = 60;
     door.unlocked = false;
     door.openAnimation = 0;
     
-    // Initialize input
     for (int i = 0; i < 256; i++) keys[i] = false;
 }
 
-// Draw text
 void drawText(float x, float y, const char* text) {
     glRasterPos2f(x, y);
     while (*text) {
@@ -182,16 +168,22 @@ void drawText(float x, float y, const char* text) {
     }
 }
 
-// Draw player
+void drawLargeText(float x, float y, const char* text) {
+    glRasterPos2f(x, y);
+    while (*text) {
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *text);
+        text++;
+    }
+}
+
 void drawPlayer() {
     float x = player.x;
     float y = player.y;
     float w = player.width;
     float h = player.height;
     
-    // Shield effect
     if (player.activePowerUp == 1) {
-        glColor3f(0.3f, 0.6f, 1.0f);
+        glColor3f(0.2f, 0.6f, 1.0f);
         glBegin(GL_TRIANGLE_FAN);
         glVertex2f(x, y + h/2);
         for (int i = 0; i <= 20; i++) {
@@ -201,8 +193,7 @@ void drawPlayer() {
         glEnd();
     }
     
-    // Body (quad)
-    glColor3f(0.2f, 0.7f, 0.3f);
+    glColor3f(0.15f, 0.65f, 0.25f);
     glBegin(GL_QUADS);
     glVertex2f(x - w/2, y);
     glVertex2f(x + w/2, y);
@@ -210,8 +201,7 @@ void drawPlayer() {
     glVertex2f(x - w/2, y + h * 0.6f);
     glEnd();
     
-    // Head (triangle fan = circle)
-    glColor3f(0.9f, 0.7f, 0.5f);
+    glColor3f(0.95f, 0.75f, 0.55f);
     glBegin(GL_TRIANGLE_FAN);
     glVertex2f(x, y + h * 0.85f);
     for (int i = 0; i <= 20; i++) {
@@ -220,17 +210,15 @@ void drawPlayer() {
     }
     glEnd();
     
-    // Eyes (points)
-    glColor3f(0.0f, 0.0f, 0.0f);
+    glColor3f(0.1f, 0.1f, 0.1f);
     glPointSize(4);
     glBegin(GL_POINTS);
     glVertex2f(x - w/6, y + h * 0.88f);
     glVertex2f(x + w/6, y + h * 0.88f);
     glEnd();
     
-    // Arms (lines)
     glLineWidth(3);
-    glColor3f(0.9f, 0.7f, 0.5f);
+    glColor3f(0.95f, 0.75f, 0.55f);
     glBegin(GL_LINES);
     glVertex2f(x - w/2, y + h * 0.5f);
     glVertex2f(x - w/2 - 8, y + h * 0.3f);
@@ -239,13 +227,11 @@ void drawPlayer() {
     glEnd();
 }
 
-// Draw platforms
 void drawPlatforms() {
     for (auto& p : platforms) {
         if (p.destroyed) continue;
         
-        // Main platform (quad)
-        glColor3f(0.5f, 0.3f, 0.1f);
+        glColor3f(0.45f, 0.35f, 0.25f);
         glBegin(GL_QUADS);
         glVertex2f(p.x, p.y);
         glVertex2f(p.x + p.width, p.y);
@@ -253,8 +239,7 @@ void drawPlatforms() {
         glVertex2f(p.x, p.y + p.height);
         glEnd();
         
-        // Top highlight (triangles)
-        glColor3f(0.7f, 0.5f, 0.2f);
+        glColor3f(0.6f, 0.5f, 0.35f);
         glBegin(GL_TRIANGLES);
         glVertex2f(p.x, p.y + p.height);
         glVertex2f(p.x + p.width/2, p.y + p.height);
@@ -265,8 +250,7 @@ void drawPlatforms() {
         glVertex2f(p.x + p.width * 0.75f, p.y + p.height + 3);
         glEnd();
         
-        // Side stripes (polygon)
-        glColor3f(0.4f, 0.2f, 0.05f);
+        glColor3f(0.3f, 0.2f, 0.1f);
         glBegin(GL_POLYGON);
         glVertex2f(p.x, p.y);
         glVertex2f(p.x + 5, p.y);
@@ -276,7 +260,6 @@ void drawPlatforms() {
     }
 }
 
-// Draw collectables (coins)
 void drawCollectables() {
     for (auto& c : collectables) {
         if (c.collected) continue;
@@ -285,8 +268,7 @@ void drawCollectables() {
         glTranslatef(c.x, c.y, 0);
         glRotatef(c.rotation, 0, 0, 1);
         
-        // Outer circle (triangle fan)
-        glColor3f(1.0f, 0.84f, 0.0f);
+        glColor3f(1.0f, 0.85f, 0.2f);
         glBegin(GL_TRIANGLE_FAN);
         glVertex2f(0, 0);
         for (int i = 0; i <= 20; i++) {
@@ -295,8 +277,7 @@ void drawCollectables() {
         }
         glEnd();
         
-        // Inner circle (triangle fan)
-        glColor3f(0.8f, 0.64f, 0.0f);
+        glColor3f(0.9f, 0.7f, 0.1f);
         glBegin(GL_TRIANGLE_FAN);
         glVertex2f(0, 0);
         for (int i = 0; i <= 20; i++) {
@@ -305,8 +286,7 @@ void drawCollectables() {
         }
         glEnd();
         
-        // Star pattern (triangles)
-        glColor3f(1.0f, 0.94f, 0.4f);
+        glColor3f(1.0f, 0.95f, 0.5f);
         glBegin(GL_TRIANGLES);
         for (int i = 0; i < 4; i++) {
             float angle = i * 3.14159f / 2;
@@ -320,13 +300,11 @@ void drawCollectables() {
     }
 }
 
-// Draw rocks
 void drawRocks() {
     for (auto& r : rocks) {
         if (!r.active) continue;
         
-        // Rock body (polygon - pentagon)
-        glColor3f(0.4f, 0.4f, 0.4f);
+        glColor3f(0.35f, 0.35f, 0.38f);
         glBegin(GL_POLYGON);
         for (int i = 0; i < 5; i++) {
             float angle = i * 2.0f * 3.14159f / 5;
@@ -334,8 +312,7 @@ void drawRocks() {
         }
         glEnd();
         
-        // Rock highlights (triangles)
-        glColor3f(0.6f, 0.6f, 0.6f);
+        glColor3f(0.55f, 0.55f, 0.6f);
         glBegin(GL_TRIANGLES);
         glVertex2f(r.x, r.y);
         glVertex2f(r.x - r.size/2, r.y + r.size/2);
@@ -344,9 +321,8 @@ void drawRocks() {
     }
 }
 
-// Draw lava
 void drawLava() {
-    glColor3f(1.0f, 0.3f, 0.0f);
+    glColor3f(0.95f, 0.25f, 0.05f);
     glBegin(GL_QUADS);
     glVertex2f(0, 0);
     glVertex2f(WINDOW_WIDTH, 0);
@@ -354,8 +330,7 @@ void drawLava() {
     glVertex2f(0, lavaHeight);
     glEnd();
     
-    // Lava waves (triangles)
-    glColor3f(1.0f, 0.5f, 0.0f);
+    glColor3f(1.0f, 0.45f, 0.1f);
     glBegin(GL_TRIANGLES);
     for (int i = 0; i < WINDOW_WIDTH; i += 40) {
         float wave = sin((i + gameTime * 0.1f) * 0.1f) * 10;
@@ -366,7 +341,6 @@ void drawLava() {
     glEnd();
 }
 
-// Draw key
 void drawKey() {
     if (!key.spawned || key.collected) return;
     
@@ -374,8 +348,7 @@ void drawKey() {
     glTranslatef(key.x, key.y, 0);
     glRotatef(key.rotation, 0, 0, 1);
     
-    // Key head (circle - triangle fan)
-    glColor3f(1.0f, 0.84f, 0.0f);
+    glColor3f(1.0f, 0.85f, 0.2f);
     glBegin(GL_TRIANGLE_FAN);
     glVertex2f(0, 0);
     for (int i = 0; i <= 20; i++) {
@@ -384,8 +357,7 @@ void drawKey() {
     }
     glEnd();
     
-    // Key hole (triangle fan - smaller)
-    glColor3f(0.5f, 0.3f, 0.0f);
+    glColor3f(0.4f, 0.25f, 0.05f);
     glBegin(GL_TRIANGLE_FAN);
     glVertex2f(0, 0);
     for (int i = 0; i <= 20; i++) {
@@ -394,8 +366,7 @@ void drawKey() {
     }
     glEnd();
     
-    // Key shaft (quad)
-    glColor3f(1.0f, 0.84f, 0.0f);
+    glColor3f(1.0f, 0.85f, 0.2f);
     glBegin(GL_QUADS);
     glVertex2f(key.size * 0.3f, -key.size * 0.2f);
     glVertex2f(key.size * 1.5f, -key.size * 0.2f);
@@ -403,7 +374,6 @@ void drawKey() {
     glVertex2f(key.size * 0.3f, key.size * 0.2f);
     glEnd();
     
-    // Key teeth (triangles)
     glBegin(GL_TRIANGLES);
     glVertex2f(key.size * 1.2f, -key.size * 0.2f);
     glVertex2f(key.size * 1.3f, -key.size * 0.2f);
@@ -417,7 +387,6 @@ void drawKey() {
     glPopMatrix();
 }
 
-// Draw power-ups
 void drawPowerUps() {
     for (auto& pu : powerUps) {
         if (pu.collected) continue;
@@ -425,11 +394,10 @@ void drawPowerUps() {
         glPushMatrix();
         glTranslatef(pu.x, pu.y, 0);
         
-        if (pu.type == 1) { // Shield
+        if (pu.type == 1) {
             glRotatef(pu.rotation, 0, 0, 1);
-            glColor3f(0.3f, 0.6f, 1.0f);
+            glColor3f(0.2f, 0.55f, 0.95f);
             
-            // Shield outline (triangle fan)
             glBegin(GL_TRIANGLE_FAN);
             glVertex2f(0, 0);
             for (int i = 0; i <= 20; i++) {
@@ -438,8 +406,7 @@ void drawPowerUps() {
             }
             glEnd();
             
-            // Shield inner (polygon)
-            glColor3f(0.5f, 0.7f, 1.0f);
+            glColor3f(0.4f, 0.7f, 1.0f);
             glBegin(GL_POLYGON);
             glVertex2f(0, pu.size * 0.7f);
             glVertex2f(-pu.size * 0.5f, pu.size * 0.3f);
@@ -449,7 +416,6 @@ void drawPowerUps() {
             glVertex2f(pu.size * 0.5f, pu.size * 0.3f);
             glEnd();
             
-            // Plus sign (quads)
             glColor3f(1.0f, 1.0f, 1.0f);
             glBegin(GL_QUADS);
             glVertex2f(-pu.size * 0.1f, -pu.size * 0.4f);
@@ -463,13 +429,12 @@ void drawPowerUps() {
             glVertex2f(-pu.size * 0.4f, pu.size * 0.1f);
             glEnd();
             
-        } else { // Slow lava
+        } else {
             float scale = 1.0f + sin(pu.rotation * 0.05f) * 0.2f;
             glScalef(scale, scale, 1.0f);
             
-            glColor3f(0.0f, 0.8f, 1.0f);
+            glColor3f(0.1f, 0.75f, 0.95f);
             
-            // Snowflake center (triangle fan)
             glBegin(GL_TRIANGLE_FAN);
             glVertex2f(0, 0);
             for (int i = 0; i <= 20; i++) {
@@ -478,8 +443,7 @@ void drawPowerUps() {
             }
             glEnd();
             
-            // Snowflake spikes (triangles)
-            glColor3f(0.5f, 0.9f, 1.0f);
+            glColor3f(0.5f, 0.85f, 1.0f);
             glBegin(GL_TRIANGLES);
             for (int i = 0; i < 6; i++) {
                 float angle = i * 3.14159f / 3;
@@ -489,7 +453,6 @@ void drawPowerUps() {
             }
             glEnd();
             
-            // Star pattern (lines)
             glLineWidth(2);
             glColor3f(1.0f, 1.0f, 1.0f);
             glBegin(GL_LINES);
@@ -505,7 +468,6 @@ void drawPowerUps() {
     }
 }
 
-// Draw door
 void drawDoor() {
     float x = door.x;
     float y = door.y;
@@ -513,14 +475,12 @@ void drawDoor() {
     float h = door.height;
     
     if (door.unlocked) {
-        // Open door animation
         glPushMatrix();
         glTranslatef(x, y, 0);
         glRotatef(-door.openAnimation * 90, 0, 0, 1);
         glTranslatef(-x, -y, 0);
         
-        // Door panel (quad)
-        glColor3f(0.4f, 0.25f, 0.1f);
+        glColor3f(0.35f, 0.22f, 0.08f);
         glBegin(GL_QUADS);
         glVertex2f(x, y);
         glVertex2f(x + w/2, y);
@@ -530,8 +490,7 @@ void drawDoor() {
         
         glPopMatrix();
         
-        // Door frame (polygon)
-        glColor3f(0.6f, 0.6f, 0.6f);
+        glColor3f(0.5f, 0.5f, 0.5f);
         glBegin(GL_POLYGON);
         glVertex2f(x - 5, y);
         glVertex2f(x + w + 5, y);
@@ -541,8 +500,7 @@ void drawDoor() {
         glEnd();
         
     } else {
-        // Locked door - door panel (quad)
-        glColor3f(0.4f, 0.25f, 0.1f);
+        glColor3f(0.35f, 0.22f, 0.08f);
         glBegin(GL_QUADS);
         glVertex2f(x, y);
         glVertex2f(x + w, y);
@@ -550,8 +508,7 @@ void drawDoor() {
         glVertex2f(x, y + h);
         glEnd();
         
-        // Door frame (polygon)
-        glColor3f(0.6f, 0.6f, 0.6f);
+        glColor3f(0.5f, 0.5f, 0.5f);
         glBegin(GL_POLYGON);
         glVertex2f(x - 5, y);
         glVertex2f(x + w + 5, y);
@@ -560,8 +517,7 @@ void drawDoor() {
         glVertex2f(x - 5, y + h + 10);
         glEnd();
         
-        // Lock (triangle fan)
-        glColor3f(0.8f, 0.7f, 0.0f);
+        glColor3f(0.9f, 0.75f, 0.2f);
         glBegin(GL_TRIANGLE_FAN);
         glVertex2f(x + w/2, y + h/2);
         for (int i = 0; i <= 20; i++) {
@@ -570,8 +526,7 @@ void drawDoor() {
         }
         glEnd();
         
-        // Keyhole (triangles)
-        glColor3f(0.2f, 0.1f, 0.0f);
+        glColor3f(0.15f, 0.08f, 0.02f);
         glBegin(GL_TRIANGLES);
         glVertex2f(x + w/2 - 3, y + h/2);
         glVertex2f(x + w/2 + 3, y + h/2);
@@ -580,10 +535,8 @@ void drawDoor() {
     }
 }
 
-// Draw HUD
 void drawHUD() {
-    // Health bar background
-    glColor3f(0.3f, 0.3f, 0.3f);
+    glColor3f(0.2f, 0.2f, 0.25f);
     glBegin(GL_QUADS);
     glVertex2f(10, WINDOW_HEIGHT - 30);
     glVertex2f(160, WINDOW_HEIGHT - 30);
@@ -591,9 +544,8 @@ void drawHUD() {
     glVertex2f(10, WINDOW_HEIGHT - 10);
     glEnd();
     
-    // Health bar (hearts)
     for (int i = 0; i < player.lives; i++) {
-        glColor3f(1.0f, 0.2f, 0.2f);
+        glColor3f(0.95f, 0.15f, 0.15f);
         glBegin(GL_TRIANGLE_FAN);
         float cx = 25 + i * 50;
         float cy = WINDOW_HEIGHT - 20;
@@ -605,8 +557,7 @@ void drawHUD() {
         glEnd();
     }
     
-    // Lava danger bar background
-    glColor3f(0.3f, 0.3f, 0.3f);
+    glColor3f(0.2f, 0.2f, 0.25f);
     glBegin(GL_QUADS);
     glVertex2f(10, WINDOW_HEIGHT - 60);
     glVertex2f(210, WINDOW_HEIGHT - 60);
@@ -614,10 +565,17 @@ void drawHUD() {
     glVertex2f(10, WINDOW_HEIGHT - 40);
     glEnd();
     
-    // Lava danger bar
     float danger = lavaHeight / WINDOW_HEIGHT;
     float barWidth = 200 * danger;
-    glColor3f(1.0f - danger, danger, 0.0f);
+    
+    if (danger < 0.5f) {
+        glColor3f(0.2f, 0.8f, 0.2f);
+    } else if (danger < 0.75f) {
+        glColor3f(0.95f, 0.75f, 0.1f);
+    } else {
+        glColor3f(0.95f, 0.2f, 0.1f);
+    }
+    
     glBegin(GL_QUADS);
     glVertex2f(10, WINDOW_HEIGHT - 60);
     glVertex2f(10 + barWidth, WINDOW_HEIGHT - 60);
@@ -625,40 +583,107 @@ void drawHUD() {
     glVertex2f(10, WINDOW_HEIGHT - 40);
     glEnd();
     
-    // Score
-    glColor3f(1.0f, 1.0f, 1.0f);
+    glColor3f(0.95f, 0.95f, 0.95f);
     char scoreText[50];
     sprintf(scoreText, "Score: %d", player.score);
     drawText(WINDOW_WIDTH - 150, WINDOW_HEIGHT - 25, scoreText);
 }
 
-// Draw game over screen
+void drawMainMenu() {
+    glColor3f(0.08f, 0.08f, 0.12f);
+    glBegin(GL_QUADS);
+    glVertex2f(0, 0);
+    glVertex2f(WINDOW_WIDTH, 0);
+    glVertex2f(WINDOW_WIDTH, WINDOW_HEIGHT);
+    glVertex2f(0, WINDOW_HEIGHT);
+    glEnd();
+    
+    // Title
+    glColor3f(0.95f, 0.85f, 0.2f);
+    drawLargeText(WINDOW_WIDTH/2 - 70, WINDOW_HEIGHT - 100, "ICY TOWER");
+    
+    glColor3f(0.7f, 0.7f, 0.75f);
+    drawText(WINDOW_WIDTH/2 - 90, WINDOW_HEIGHT - 140, "ASCEND TO VICTORY");
+    
+    // Start button with gradient effect
+    glColor3f(0.15f, 0.55f, 0.25f);
+    glBegin(GL_QUADS);
+    glVertex2f(startButtonX, startButtonY);
+    glVertex2f(startButtonX + startButtonWidth, startButtonY);
+    glColor3f(0.2f, 0.65f, 0.35f);
+    glVertex2f(startButtonX + startButtonWidth, startButtonY + startButtonHeight);
+    glVertex2f(startButtonX, startButtonY + startButtonHeight);
+    glEnd();
+    
+    // Button border
+    glColor3f(0.3f, 0.75f, 0.45f);
+    glLineWidth(2);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(startButtonX, startButtonY);
+    glVertex2f(startButtonX + startButtonWidth, startButtonY);
+    glVertex2f(startButtonX + startButtonWidth, startButtonY + startButtonHeight);
+    glVertex2f(startButtonX, startButtonY + startButtonHeight);
+    glEnd();
+    
+    glColor3f(1.0f, 1.0f, 1.0f);
+    drawLargeText(startButtonX + 20, startButtonY + 18, "START GAME");
+    
+    // Instructions
+    glColor3f(0.6f, 0.6f, 0.65f);
+    drawText(WINDOW_WIDTH/2 - 130, 200, "WASD / Arrow Keys - Move & Jump");
+    drawText(WINDOW_WIDTH/2 - 100, 170, "Collect all coins to unlock door");
+    drawText(WINDOW_WIDTH/2 - 80, 140, "Avoid rocks and lava!");
+    
+    // Decorative elements
+    glColor3f(0.95f, 0.25f, 0.05f);
+    glBegin(GL_TRIANGLES);
+    for (int i = 0; i < 10; i++) {
+        float x = 50 + i * 75;
+        glVertex2f(x, 80);
+        glVertex2f(x + 20, 95);
+        glVertex2f(x + 40, 80);
+    }
+    glEnd();
+}
+
 void drawGameOver() {
-    glColor3f(0.8f, 0.1f, 0.1f);
     if (gameState == WIN) {
-        drawText(WINDOW_WIDTH/2 - 50, WINDOW_HEIGHT/1.5, "YOU WIN!");
+        glColor3f(0.2f, 0.8f, 0.3f);
+        drawLargeText(WINDOW_WIDTH/2 - 70, WINDOW_HEIGHT/1.5, "YOU WIN!");
     } else {
-        drawText(WINDOW_WIDTH/2 - 50, WINDOW_HEIGHT/1.5, "GAME OVER!");
+        glColor3f(0.95f, 0.2f, 0.2f);
+        drawLargeText(WINDOW_WIDTH/2 - 90, WINDOW_HEIGHT/1.5, "GAME OVER!");
     }
     
     char scoreText[50];
     sprintf(scoreText, "Final Score: %d", player.score);
+    glColor3f(0.9f, 0.9f, 0.95f);
+    drawText(WINDOW_WIDTH/2 - 70, WINDOW_HEIGHT/2 - 40, scoreText);
+    
+    // Restart button with gradient
+    glColor3f(0.15f, 0.55f, 0.25f);
+    glBegin(GL_QUADS);
+    glVertex2f(restartButtonX, restartButtonY);
+    glVertex2f(restartButtonX + restartButtonWidth, restartButtonY);
+    glColor3f(0.2f, 0.65f, 0.35f);
+    glVertex2f(restartButtonX + restartButtonWidth, restartButtonY + restartButtonHeight);
+    glVertex2f(restartButtonX, restartButtonY + restartButtonHeight);
+    glEnd();
+    
+    // Button border
+    glColor3f(0.3f, 0.75f, 0.45f);
+    glLineWidth(2);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(restartButtonX, restartButtonY);
+    glVertex2f(restartButtonX + restartButtonWidth, restartButtonY);
+    glVertex2f(restartButtonX + restartButtonWidth, restartButtonY + restartButtonHeight);
+    glVertex2f(restartButtonX, restartButtonY + restartButtonHeight);
+    glEnd();
+    
     glColor3f(1.0f, 1.0f, 1.0f);
-    drawText(WINDOW_WIDTH/2 - 60, WINDOW_HEIGHT/2 - 40, scoreText);
-   glColor3f(0.1f, 0.5f, 0.1f);  // Green color for the button
-       glBegin(GL_QUADS);
-       glVertex2f(restartButtonX, restartButtonY);
-       glVertex2f(restartButtonX + restartButtonWidth, restartButtonY);
-       glVertex2f(restartButtonX + restartButtonWidth, restartButtonY + restartButtonHeight);
-       glVertex2f(restartButtonX, restartButtonY + restartButtonHeight);
-       glEnd();
-       
-       glColor3f(1.0f, 1.0f, 1.0f);  // White text
-       drawText(restartButtonX + 20, restartButtonY + 10, "Restart");
-
+    drawLargeText(restartButtonX + 30, restartButtonY + 18, "PLAY AGAIN");
 }
 
-// Collision detection
 bool checkCollision(float x1, float y1, float w1, float h1, float x2, float y2, float w2, float h2) {
     return (x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2);
 }
@@ -670,7 +695,6 @@ bool checkCircleCollision(float x1, float y1, float r1, float x2, float y2, floa
     return distance < (r1 + r2);
 }
 
-// Update game state
 void update(int value) {
     if (gameState != PLAYING) {
         glutTimerFunc(16, update, 0);
@@ -679,7 +703,6 @@ void update(int value) {
     
     gameTime++;
     
-    // Player movement
     if (keys['a'] || keys['A']) {
         player.x -= MOVE_SPEED * 16;
         if (player.x < player.width/2) player.x = player.width/2;
@@ -689,17 +712,14 @@ void update(int value) {
         if (player.x > WINDOW_WIDTH - player.width/2) player.x = WINDOW_WIDTH - player.width/2;
     }
     
-    // Jump
     if ((keys['w'] || keys['W'] || keys[' ']) && !player.isJumping) {
         player.velocityY = JUMP_VELOCITY;
         player.isJumping = true;
     }
     
-    // Apply gravity
     player.velocityY += GRAVITY * 16;
     player.y += player.velocityY * 16;
     
-    // Platform collision
     for (auto& p : platforms) {
         if (p.destroyed) continue;
         
@@ -712,37 +732,31 @@ void update(int value) {
         }
     }
     
-    // Ground collision
     if (player.y <= 30) {
         player.y = 30;
         player.velocityY = 0;
         player.isJumping = false;
     }
     
-    // Keep player in bounds
     if (player.y > WINDOW_HEIGHT) player.y = WINDOW_HEIGHT;
     
-    // Update lava
     float currentLavaSpeed = lavaSpeed;
     if (player.activePowerUp == 2) {
-        currentLavaSpeed *= 0.3f; // Slow lava power-up
+        currentLavaSpeed *= 0.3f;
     }
     lavaHeight += currentLavaSpeed;
     lavaSpeed += LAVA_SPEED_INCREMENT;
     
-    // Check lava collision with player
     if (player.y < lavaHeight + 20) {
         gameState = LOSE;
     }
     
-    // Destroy platforms touched by lava
     for (auto& p : platforms) {
         if (!p.destroyed && p.y < lavaHeight) {
             p.destroyed = true;
         }
     }
     
-    // Spawn rocks
     if (gameTime - lastRockSpawn > 120 + rand() % 180) {
         Rock r;
         r.x = rand() % WINDOW_WIDTH;
@@ -754,14 +768,12 @@ void update(int value) {
         lastRockSpawn = gameTime;
     }
     
-    // Update rocks
     for (auto& r : rocks) {
         if (!r.active) continue;
         
         r.y -= r.speed;
         
-        // Check collision with player
-        if (player.activePowerUp != 1) { // No collision if shield active
+        if (player.activePowerUp != 1) {
             if (checkCircleCollision(player.x, player.y + player.height/2, player.width/2,
                                     r.x, r.y, r.size)) {
                 player.lives--;
@@ -772,32 +784,27 @@ void update(int value) {
                 }
             }
         } else {
-            // Rock bounces off shield
             if (checkCircleCollision(player.x, player.y + player.height/2, player.width/2 + 10,
                                     r.x, r.y, r.size)) {
                 r.active = false;
             }
         }
         
-        // Remove rocks below screen
         if (r.y < -r.size) {
             r.active = false;
         }
     }
     
-    // Update collectables
     for (auto& c : collectables) {
         if (c.collected) continue;
         
         c.rotation += 2.0f;
         
-        // Check collision with player
         if (checkCircleCollision(player.x, player.y + player.height/2, player.width/2,
                                 c.x, c.y, c.size)) {
             c.collected = true;
             player.score += 10;
             
-            // Check if all collectables collected
             bool allCollected = true;
             for (auto& col : collectables) {
                 if (!col.collected) {
@@ -806,20 +813,17 @@ void update(int value) {
                 }
             }
             
-            // Spawn key
             if (allCollected && !key.spawned) {
                 key.spawned = true;
                 key.x = WINDOW_WIDTH / 2;
-                key.y = door.y - 80;
+                key.y = door.y - 50;
             }
         }
     }
     
-    // Update key
     if (key.spawned && !key.collected) {
         key.rotation += 3.0f;
         
-        // Check collision with player
         if (checkCircleCollision(player.x, player.y + player.height/2, player.width/2,
                                 key.x, key.y, key.size)) {
             key.collected = true;
@@ -828,42 +832,37 @@ void update(int value) {
         }
     }
     
-    // Spawn power-ups
     if (gameTime - powerUpSpawnTime > 600 && powerUps.size() < 2) {
         PowerUp pu;
         pu.x = rand() % (WINDOW_WIDTH - 100) + 50;
         pu.y = lavaHeight + 150 + rand() % 200;
         pu.size = 20;
-        pu.type = (powerUps.size() == 0) ? 1 : 2; // Alternate types
+        pu.type = (powerUps.size() == 0) ? 1 : 2;
         pu.collected = false;
-        pu.timer = 300; // 5 seconds to collect
+        pu.timer = 300;
         pu.rotation = 0;
         powerUps.push_back(pu);
         powerUpSpawnTime = gameTime;
     }
     
-    // Update power-ups
     for (auto& pu : powerUps) {
         if (pu.collected) continue;
         
         pu.rotation += 5.0f;
         pu.timer--;
         
-        // Disappear if not collected in time
         if (pu.timer <= 0) {
             pu.collected = true;
         }
         
-        // Check collision with player
         if (checkCircleCollision(player.x, player.y + player.height/2, player.width/2,
                                 pu.x, pu.y, pu.size)) {
             pu.collected = true;
             player.activePowerUp = pu.type;
-            player.powerUpTimer = 180; // 3 seconds effect
+            player.powerUpTimer = 180;
         }
     }
     
-    // Update active power-up timer
     if (player.activePowerUp > 0) {
         player.powerUpTimer--;
         if (player.powerUpTimer <= 0) {
@@ -871,12 +870,10 @@ void update(int value) {
         }
     }
     
-    // Update door animation
     if (door.unlocked && door.openAnimation < 1.0f) {
         door.openAnimation += 0.02f;
     }
     
-    // Check if player reaches door
     if (door.unlocked && 
         checkCollision(player.x - player.width/2, player.y, player.width, player.height,
                       door.x, door.y, door.width, door.height)) {
@@ -887,11 +884,12 @@ void update(int value) {
     glutTimerFunc(16, update, 0);
 }
 
-// Display function
 void display() {
     glClear(GL_COLOR_BUFFER_BIT);
     
-    if (gameState == PLAYING) {
+    if (gameState == MENU) {
+        drawMainMenu();
+    } else if (gameState == PLAYING) {
         drawLava();
         drawPlatforms();
         drawCollectables();
@@ -908,11 +906,9 @@ void display() {
     glutSwapBuffers();
 }
 
-// Keyboard down
 void keyDown(unsigned char key, int x, int y) {
     keys[key] = true;
     
-    // Restart game
     if ((gameState == WIN || gameState == LOSE) && key == 'r') {
         platforms.clear();
         collectables.clear();
@@ -928,51 +924,57 @@ void keyDown(unsigned char key, int x, int y) {
     }
 }
 
-// Keyboard up
 void keyUp(unsigned char key, int x, int y) {
     keys[key] = false;
 }
 
-// Special key down (arrow keys)
 void specialKeyDown(int key, int x, int y) {
     if (key == GLUT_KEY_LEFT) keys['a'] = true;
     if (key == GLUT_KEY_RIGHT) keys['d'] = true;
     if (key == GLUT_KEY_UP) keys['w'] = true;
 }
 
-// Special key up
 void specialKeyUp(int key, int x, int y) {
     if (key == GLUT_KEY_LEFT) keys['a'] = false;
     if (key == GLUT_KEY_RIGHT) keys['d'] = false;
     if (key == GLUT_KEY_UP) keys['w'] = false;
 }
-  void mouse(int button, int state, int x, int y) {
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && (gameState == WIN || gameState == LOSE)) {
-        int glY = WINDOW_HEIGHT - y; 
+
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        int glY = WINDOW_HEIGHT - y;
         
-        // Now check if the click is within the button bounds using OpenGL coordinates
-        if (x >= restartButtonX && x <= restartButtonX + restartButtonWidth &&
-            glY >= restartButtonY && glY <= restartButtonY + restartButtonHeight) {
-            // Restart the game (same code as in keyDown for 'r')
-            platforms.clear();
-            collectables.clear();
-            rocks.clear();
-            powerUps.clear();
-            lavaHeight = 0.0f;
-            lavaSpeed = LAVA_INITIAL_SPEED;
-            gameTime = 0;
-            lastRockSpawn = 0;
-            powerUpSpawnTime = 0;
-            gameState = PLAYING;
-            init();
-            glutPostRedisplay();  // Redraw the screen
+        // Start button on menu
+        if (gameState == MENU) {
+            if (x >= startButtonX && x <= startButtonX + startButtonWidth &&
+                glY >= startButtonY && glY <= startButtonY + startButtonHeight) {
+                gameState = PLAYING;
+                init();
+                glutPostRedisplay();
+            }
+        }
+        
+        // Restart button on game over
+        if (gameState == WIN || gameState == LOSE) {
+            if (x >= restartButtonX && x <= restartButtonX + restartButtonWidth &&
+                glY >= restartButtonY && glY <= restartButtonY + restartButtonHeight) {
+                platforms.clear();
+                collectables.clear();
+                rocks.clear();
+                powerUps.clear();
+                lavaHeight = 0.0f;
+                lavaSpeed = LAVA_INITIAL_SPEED;
+                gameTime = 0;
+                lastRockSpawn = 0;
+                powerUpSpawnTime = 0;
+                gameState = PLAYING;
+                init();
+                glutPostRedisplay();
+            }
         }
     }
 }
 
-   
-
-// Main function
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);

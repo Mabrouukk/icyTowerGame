@@ -1,0 +1,6 @@
+#!/bin/bash
+g++ -std=c++11 T02_16001977.cpp -o game -framework OpenGL -framework GLUT
+if [ $? -eq 0 ]; then
+    ./game
+fi
+
