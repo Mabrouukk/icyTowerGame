@@ -12,8 +12,8 @@ const float JUMP_VELOCITY = 0.6f;
 const float MOVE_SPEED = 0.15f;
 const int INITIAL_LIVES = 3;
 const int COLLECTABLES_COUNT = 7;
-const float LAVA_INITIAL_SPEED = 0.008f;
-const float LAVA_SPEED_INCREMENT = 0.00003f;
+const float LAVA_INITIAL_SPEED = 0.1f;
+const float LAVA_SPEED_INCREMENT = 0.0005f;
 
 // Button positions
 const float startButtonX = WINDOW_WIDTH / 2 - 75;
@@ -22,7 +22,7 @@ const float startButtonWidth = 200;
 const float startButtonHeight = 50;
 
 const float restartButtonX = WINDOW_WIDTH / 2 - 75;
-const float restartButtonY = (WINDOW_HEIGHT / 2) - 80;
+const float restartButtonY = (WINDOW_HEIGHT / 2) - 20;
 const float restartButtonWidth = 150;
 const float restartButtonHeight = 50;
 
@@ -652,7 +652,7 @@ void drawGameOver() {
         drawLargeText(WINDOW_WIDTH/2 - 70, WINDOW_HEIGHT/1.5, "YOU WIN!");
     } else {
         glColor3f(0.95f, 0.2f, 0.2f);
-        drawLargeText(WINDOW_WIDTH/2 - 90, WINDOW_HEIGHT/1.5, "GAME OVER!");
+        drawLargeText(WINDOW_WIDTH/2 - 70, WINDOW_HEIGHT/1.5, "GAME OVER!");
     }
     
     char scoreText[50];
