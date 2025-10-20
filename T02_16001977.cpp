@@ -6,15 +6,15 @@
 #include <vector>
 #include <string>
 
-const int WINDOW_WIDTH = 800;
-const int WINDOW_HEIGHT = 600;
+const int WINDOW_WIDTH = 1200;
+const int WINDOW_HEIGHT = 800;
 const float GRAVITY = -0.0008f;
 const float JUMP_VELOCITY = 0.6f;
 const float MOVE_SPEED = 0.15f;
 const int INITIAL_LIVES = 3;
 const int COLLECTABLES_COUNT = 7;
 const float LAVA_INITIAL_SPEED = 0.01f;
-const float LAVA_SPEED_INCREMENT = 0.0005f;
+const float LAVA_SPEED_INCREMENT = 0.0003f;
 
 // Button positions
 const float startButtonX = WINDOW_WIDTH / 2 - 75;
@@ -760,7 +760,7 @@ void drawHUD() {
 }
 
 void drawMainMenu() {
-   glColor3f(0.53f, 0.81f, 0.92f);
+    glColor3f(0.1f, 0.1f, 0.1f);
     glBegin(GL_QUADS);
     glVertex2f(0, 0);
     glVertex2f(WINDOW_WIDTH, 0);
@@ -786,7 +786,7 @@ void drawMainMenu() {
     glEnd();
     
     // Button border
-    glColor3f(0.3f, 0.75f, 0.45f);
+    glColor3f(0.0f, 0.0f, 0.0f);
     glLineWidth(2);
     glBegin(GL_LINE_LOOP);
     glVertex2f(startButtonX, startButtonY);

@@ -1,6 +1,21 @@
 {
-    "files.associations": {
-        "icytowergame": "cpp",
-        "vector": "cpp"
-    }
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/System/Library/Frameworks/OpenGL.framework/Headers",
+                "/System/Library/Frameworks/GLUT.framework/Headers"
+            ],
+            "defines": [],
+            "macFrameworkPath": [
+                "/System/Library/Frameworks"
+            ],
+            "compilerPath": "/usr/bin/clang++",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "macos-clang-x64"
+        }
+    ],
+    "version": 4
 }
