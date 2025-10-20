@@ -26,6 +26,11 @@ const float restartButtonX = WINDOW_WIDTH / 2 - 75;
 const float restartButtonY = (WINDOW_HEIGHT / 2) - 80;
 const float restartButtonWidth = 150;
 const float restartButtonHeight = 50;
+bool isPaused = false;         
+float pauseButtonX = 20;       
+float pauseButtonY = WINDOW_HEIGHT - 100;
+float pauseButtonWidth = 100;
+float pauseButtonHeight = 35;
 
 enum GameState { MENU, PLAYING, WIN, LOSE };
 GameState gameState = MENU;
@@ -103,7 +108,7 @@ int powerUpSpawnTime = 0;
 bool keys[256];
 
 void init() {
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+   // glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT);
@@ -307,43 +312,59 @@ void drawPlatforms() {
         float w = p.width;
         float h = p.height;
 
-        // Base color (wood or any solid color)
-        glColor3f(0.45f, 0.35f, 0.25f);
-
+        // Rock base color (gray)
+        glColor3f(0.4f, 0.4f, 0.42f);
+        
+        // Main rock body (irregular polygon to look like a rock)
         glBegin(GL_POLYGON);
-        // Left vertical leg
-        glVertex2f(x, y);
-        glVertex2f(x + w * 0.15f, y);
-        glVertex2f(x + w * 0.15f, y + h);
-
-        // Left diagonal up to middle top
-        glVertex2f(x + w * 0.4f, y + h * 0.4f);
-
-        // Center bottom of M (the dip)
-        glVertex2f(x + w * 0.5f, y + h * 0.7f);
-
-        // Right diagonal up
-        glVertex2f(x + w * 0.6f, y + h * 0.4f);
-
-        // Right vertical leg
-        glVertex2f(x + w * 0.85f, y + h);
-        glVertex2f(x + w * 0.85f, y);
-        glVertex2f(x + w, y);
+        glVertex2f(x + w * 0.1f, y);
+        glVertex2f(x + w * 0.9f, y);
+        glVertex2f(x + w, y + h * 0.3f);
+        glVertex2f(x + w * 0.95f, y + h * 0.7f);
+        glVertex2f(x + w * 0.7f, y + h);
+        glVertex2f(x + w * 0.3f, y + h);
+        glVertex2f(x + w * 0.05f, y + h * 0.7f);
+        glVertex2f(x, y + h * 0.3f);
         glEnd();
-
-        // Optional darker outline for shape clarity
+        
+        // Rock highlights (lighter gray triangles for texture)
+        glColor3f(0.55f, 0.55f, 0.58f);
+        glBegin(GL_TRIANGLES);
+        // Top left highlight
+        glVertex2f(x + w * 0.2f, y + h * 0.6f);
+        glVertex2f(x + w * 0.35f, y + h * 0.8f);
+        glVertex2f(x + w * 0.15f, y + h * 0.9f);
+        
+        // Top right highlight
+        glVertex2f(x + w * 0.7f, y + h * 0.7f);
+        glVertex2f(x + w * 0.85f, y + h * 0.6f);
+        glVertex2f(x + w * 0.8f, y + h * 0.9f);
+        glEnd();
+        
+        // Rock cracks/lines (dark lines for detail)
+        glColor3f(0.25f, 0.25f, 0.27f);
         glLineWidth(2);
-        glColor3f(0.25f, 0.18f, 0.1f);
+        glBegin(GL_LINES);
+        // Crack 1
+        glVertex2f(x + w * 0.3f, y + h * 0.2f);
+        glVertex2f(x + w * 0.4f, y + h * 0.8f);
+        // Crack 2
+        glVertex2f(x + w * 0.6f, y + h * 0.1f);
+        glVertex2f(x + w * 0.7f, y + h * 0.7f);
+        glEnd();
+        
+        // Rock outline for definition
+        glColor3f(0.2f, 0.2f, 0.22f);
+        glLineWidth(2);
         glBegin(GL_LINE_LOOP);
-        glVertex2f(x, y);
-        glVertex2f(x + w * 0.15f, y);
-        glVertex2f(x + w * 0.15f, y + h);
-        glVertex2f(x + w * 0.4f, y + h * 0.4f);
-        glVertex2f(x + w * 0.5f, y + h * 0.7f);
-        glVertex2f(x + w * 0.6f, y + h * 0.4f);
-        glVertex2f(x + w * 0.85f, y + h);
-        glVertex2f(x + w * 0.85f, y);
-        glVertex2f(x + w, y);
+        glVertex2f(x + w * 0.1f, y);
+        glVertex2f(x + w * 0.9f, y);
+        glVertex2f(x + w, y + h * 0.3f);
+        glVertex2f(x + w * 0.95f, y + h * 0.7f);
+        glVertex2f(x + w * 0.7f, y + h);
+        glVertex2f(x + w * 0.3f, y + h);
+        glVertex2f(x + w * 0.05f, y + h * 0.7f);
+        glVertex2f(x, y + h * 0.3f);
         glEnd();
     }
 }
@@ -391,23 +412,62 @@ void drawCollectables() {
 void drawRocks() {
     for (auto& r : rocks) {
         if (!r.active) continue;
-        
-        glColor3f(0.35f, 0.35f, 0.38f);
+
+        int layers = 6; // number of gradient layers
+        float maxSize = r.size;
+
+        // Draw layered glow (outer dark -> inner bright)
+        for (int l = 0; l < layers; l++) {
+            float t = (float)l / (layers - 1);
+            float radius = maxSize * (1.0f - 0.12f * l);
+
+            // Color gradient: from dark gray to fiery orange
+            float rColor = 0.2f + 0.8f * (1 - t);
+            float gColor = 0.1f + 0.4f * (1 - t);
+            float bColor = 0.05f + 0.1f * (1 - t);
+
+            glColor3f(rColor, gColor, bColor);
+
+            glBegin(GL_POLYGON);
+            for (int i = 0; i < 12; i++) {
+                float angle = i * 2.0f * 3.14159f / 12.0f;
+                float randOffset = (rand() % 10 - 5) * 0.01f * radius; // jagged edges
+                float x = r.x + cos(angle) * (radius + randOffset);
+                float y = r.y + sin(angle) * (radius + randOffset);
+                glVertex2f(x, y);
+            }
+            glEnd();
+        }
+
+        // Add fiery cracks (random thin triangles)
+        glColor3f(1.0f, 0.6f, 0.0f); // bright orange
+        for (int i = 0; i < 3; i++) {
+            float angle = (rand() % 360) * 3.14159f / 180.0f;
+            float innerR = r.size * 0.2f;
+            float outerR = r.size * (0.5f + (rand() % 50) / 100.0f);
+
+            glBegin(GL_TRIANGLES);
+                glVertex2f(r.x, r.y);
+                glVertex2f(r.x + cos(angle) * innerR, r.y + sin(angle) * innerR);
+                glVertex2f(r.x + cos(angle) * outerR, r.y + sin(angle) * outerR);
+            glEnd();
+        }
+
+        // Subtle glowing halo (transparency)
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glColor4f(1.0f, 0.4f, 0.1f, 0.15f); // soft orange glow
         glBegin(GL_POLYGON);
-        for (int i = 0; i < 5; i++) {
-            float angle = i * 2.0f * 3.14159f / 5;
-            glVertex2f(r.x + cos(angle) * r.size, r.y + sin(angle) * r.size);
+        for (int i = 0; i < 20; i++) {
+            float angle = i * 2.0f * 3.14159f / 20.0f;
+            glVertex2f(r.x + cos(angle) * (r.size * 1.3f),
+                       r.y + sin(angle) * (r.size * 1.3f));
         }
         glEnd();
-        
-        glColor3f(0.55f, 0.55f, 0.6f);
-        glBegin(GL_TRIANGLES);
-        glVertex2f(r.x, r.y);
-        glVertex2f(r.x - r.size/2, r.y + r.size/2);
-        glVertex2f(r.x + r.size/2, r.y + r.size/2);
-        glEnd();
+        glDisable(GL_BLEND);
     }
 }
+
 
 void drawLava() {
     glColor3f(1.0f, 0.4f, 0.0f); 
@@ -700,7 +760,7 @@ void drawHUD() {
 }
 
 void drawMainMenu() {
-    glColor3f(0.00f, 0.0f, 0.0f);
+   glColor3f(0.53f, 0.81f, 0.92f);
     glBegin(GL_QUADS);
     glVertex2f(0, 0);
     glVertex2f(WINDOW_WIDTH, 0);
@@ -807,7 +867,6 @@ bool checkCircleCollision(float x1, float y1, float r1, float x2, float y2, floa
 }
 
 void update(int value) {
-    // Update animation timer even on menu
     if (gameState == MENU) {
         gameTime++;
         glutPostRedisplay();
@@ -818,6 +877,11 @@ void update(int value) {
     if (gameState != PLAYING) {
         glutTimerFunc(16, update, 0);
         return;
+    } 
+    if (isPaused) {
+        glutPostRedisplay();           // still redraw the scene (so Pause UI shows)
+        glutTimerFunc(16, update, 0);  // keep timer running
+        return;                        // exit early to freeze game logic
     }
     
     gameTime++;
@@ -1001,7 +1065,51 @@ void update(int value) {
     
     glutPostRedisplay();
     glutTimerFunc(16, update, 0);
+    
 }
+void drawBackground() {
+    glBegin(GL_QUADS);
+    
+    // Top color (dark charcoal)
+    glColor3f(0.07f, 0.05f, 0.05f);
+    glVertex2f(0, WINDOW_HEIGHT);
+    glVertex2f(WINDOW_WIDTH, WINDOW_HEIGHT);
+    
+    // Bottom color (lava orange glow)
+    glColor3f(0.35f, 0.12f, 0.05f);
+    glVertex2f(WINDOW_WIDTH, 0);
+    glVertex2f(0, 0);
+    
+    glEnd();
+}
+void drawPauseButton() {
+    glColor3f(0.2f, 0.2f, 0.2f);
+    glBegin(GL_QUADS);
+        glVertex2f(pauseButtonX, pauseButtonY);
+        glVertex2f(pauseButtonX + pauseButtonWidth, pauseButtonY);
+        glVertex2f(pauseButtonX + pauseButtonWidth, pauseButtonY + pauseButtonHeight);
+        glVertex2f(pauseButtonX, pauseButtonY + pauseButtonHeight);
+    glEnd();
+
+    // Button border
+    glColor3f(1.0f, 0.5f, 0.0f);
+    glLineWidth(2);
+    glBegin(GL_LINE_LOOP);
+        glVertex2f(pauseButtonX, pauseButtonY);
+        glVertex2f(pauseButtonX + pauseButtonWidth, pauseButtonY);
+        glVertex2f(pauseButtonX + pauseButtonWidth, pauseButtonY + pauseButtonHeight);
+        glVertex2f(pauseButtonX, pauseButtonY + pauseButtonHeight);
+    glEnd();
+
+    // Button text
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glRasterPos2f(pauseButtonX + 20, pauseButtonY + 12);
+    std::string text = isPaused ? "Resume" : "Pause";
+    for (char c : text) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+    }
+}
+
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT);
@@ -1009,6 +1117,7 @@ void display() {
     if (gameState == MENU) {
         drawMainMenu();
     } else if (gameState == PLAYING) {
+        drawBackground();
         drawLava();
         drawPlatforms();
         drawCollectables();
@@ -1021,6 +1130,9 @@ void display() {
     } else {
         drawGameOver();
     }
+    if (gameState == PLAYING) {
+    drawPauseButton();
+}
     
     glutSwapBuffers();
 }
@@ -1062,8 +1174,8 @@ void specialKeyUp(int key, int x, int y) {
 void mouse(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         int glY = WINDOW_HEIGHT - y;
-        
-        // Start button on menu
+
+        // --- Start button on menu ---
         if (gameState == MENU) {
             if (x >= startButtonX && x <= startButtonX + startButtonWidth &&
                 glY >= startButtonY && glY <= startButtonY + startButtonHeight) {
@@ -1072,8 +1184,17 @@ void mouse(int button, int state, int x, int y) {
                 glutPostRedisplay();
             }
         }
-        
-        // Restart button on game over
+
+        // --- Pause button during gameplay ---
+        if (gameState == PLAYING) {
+            if (x >= pauseButtonX && x <= pauseButtonX + pauseButtonWidth &&
+                glY >= pauseButtonY && glY <= pauseButtonY + pauseButtonHeight) {
+                isPaused = !isPaused;
+                glutPostRedisplay();
+            }
+        }
+
+        // --- Restart button on game over or win ---
         if (gameState == WIN || gameState == LOSE) {
             if (x >= restartButtonX && x <= restartButtonX + restartButtonWidth &&
                 glY >= restartButtonY && glY <= restartButtonY + restartButtonHeight) {
