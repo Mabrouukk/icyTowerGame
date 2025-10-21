@@ -104,6 +104,7 @@ float lavaSpeed = LAVA_INITIAL_SPEED;
 int lastRockSpawn = 0;
 int gameTime = 0;
 int powerUpSpawnTime = 0;
+int letsGoTimer = 0;
 
 bool keys[256];
 
@@ -115,9 +116,18 @@ void init() {
     
     srand(time(0));
     
-    player.x = WINDOW_WIDTH / 2;
-    player.y = 50;
+   player.x = WINDOW_WIDTH / 2;
+    // create starting platform and place the player on top of it
+    Platform startP;
+    startP.width = 200;
+   startP.height = 20;
+    startP.x = WINDOW_WIDTH / 2 - startP.width / 2;
+    startP.y = 50;                 // visual Y for the starter platform
+    startP.destroyed = false;
+    platforms.push_back(startP);   // make it a real platform for collisions/rendering
     player.width = 30;
+    player.height = 40;
+    player.y = startP.y + startP.height;
     player.height = 40;
     player.velocityY = 0;
     player.isJumping = false;
@@ -164,6 +174,8 @@ void init() {
     door.openAnimation = 0;
     
     for (int i = 0; i < 256; i++) keys[i] = false;
+    letsGoTimer = 120;
+
 }
 
 void drawText(float x, float y, const char* text) {
@@ -801,7 +813,7 @@ void drawMainMenu() {
     // Instructions
     glColor3f(0.6f, 0.6f, 0.65f);
     drawText(WINDOW_WIDTH/2 - 130, 200, "WASD / Arrow Keys - Move & Jump");
-    drawText(WINDOW_WIDTH/2 - 100, 170, "Collect all coins to unlock door");
+    drawText(WINDOW_WIDTH/2 - 100, 170, "Collect at least 5 coins unlock door");
     drawText(WINDOW_WIDTH/2 - 80, 140, "Avoid rocks and lava!");
     
     // Decorative elements
@@ -826,7 +838,7 @@ void drawGameOver() {
     }
     
     char scoreText[50];
-    sprintf(scoreText, "Final Score: %d", player.score);
+    snprintf(scoreText, sizeof(scoreText), "Final Score: %d", player.score);
     glColor3f(0.9f, 0.9f, 0.95f);
     drawText(WINDOW_WIDTH/2 - 50, WINDOW_HEIGHT/2 , scoreText);
     
@@ -883,6 +895,7 @@ void update(int value) {
         glutTimerFunc(16, update, 0);  // keep timer running
         return;                        // exit early to freeze game logic
     }
+        if (letsGoTimer > 0) --letsGoTimer;
     
     gameTime++;
     
@@ -985,22 +998,21 @@ void update(int value) {
         
         if (checkCircleCollision(player.x, player.y + player.height/2, player.width/2,
                                 c.x, c.y, c.size)) {
-            c.collected = true;
-            player.score += 10;
-            
-            bool allCollected = true;
+            if (!c.collected) {
+                c.collected = true;
+                player.score += 10;
+            }
+
+            // spawn key once player has collected 5 or more coins
+            int collectedCount = 0;
             for (auto& col : collectables) {
-                if (!col.collected) {
-                    allCollected = false;
-                    break;
-                }
+                if (col.collected) ++collectedCount;
             }
-            
-            if (allCollected && !key.spawned) {
+            if (collectedCount >= 5 && !key.spawned) {
                 key.spawned = true;
-                key.x = WINDOW_WIDTH / 2;
-                key.y = door.y - 50;
-            }
+               key.x = WINDOW_WIDTH / 2;
+               key.y = door.y - 50;
+           }
         }
     }
     
@@ -1110,7 +1122,6 @@ void drawPauseButton() {
     }
 }
 
-
 void display() {
     glClear(GL_COLOR_BUFFER_BIT);
     
@@ -1133,13 +1144,36 @@ void display() {
     if (gameState == PLAYING) {
     drawPauseButton();
 }
+if (gameState == PLAYING && letsGoTimer > 0) {
+        float cx = WINDOW_WIDTH / 2.0f;
+        float cy = WINDOW_HEIGHT / 2.0f;
+        float bw = 420.0f;
+        float bh = 110.0f;
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Background band
+        glColor4f(0.0f, 0.0f, 0.0f, 0.6f);
+        glBegin(GL_QUADS);
+            glVertex2f(cx - bw/2, cy - bh/2);
+            glVertex2f(cx + bw/2, cy - bh/2);
+            glVertex2f(cx + bw/2, cy + bh/2);
+            glVertex2f(cx - bw/2, cy + bh/2);
+        glEnd();
+
+        glDisable(GL_BLEND);
+
+        // Text
+        glColor3f(1.0f, 0.9f, 0.2f);
+        drawLargeText(cx - 50.0f, cy + 6.0f, "LET'S GO!");
+    }
     
     glutSwapBuffers();
 }
 
 void keyDown(unsigned char key, int x, int y) {
     keys[key] = true;
-    
     if ((gameState == WIN || gameState == LOSE) && key == 'r') {
         platforms.clear();
         collectables.clear();
@@ -1150,10 +1184,12 @@ void keyDown(unsigned char key, int x, int y) {
         gameTime = 0;
         lastRockSpawn = 0;
         powerUpSpawnTime = 0;
+        letsGoTimer = 0;
         gameState = PLAYING;
         init();
     }
-}
+    }
+
 
 void keyUp(unsigned char key, int x, int y) {
     keys[key] = false;
