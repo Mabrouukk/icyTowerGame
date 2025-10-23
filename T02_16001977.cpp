@@ -1203,24 +1203,24 @@ void keyDown(unsigned char key, int x, int y) {
     }
 
 
-void keyUp(unsigned char key, int x, int y) {
+    void keyUp(unsigned char key, int x, int y) {
     keys[key] = false;
-}
+    }
 
-void specialKeyDown(int key, int x, int y) {
+    void specialKeyDown(int key, int x, int y) {
     if (key == GLUT_KEY_LEFT) keys['a'] = true;
     if (key == GLUT_KEY_RIGHT) keys['d'] = true;
     if (key == GLUT_KEY_UP) keys['w'] = true;
-}
+    }
 
-void specialKeyUp(int key, int x, int y) {
+    void specialKeyUp(int key, int x, int y) {
     if (key == GLUT_KEY_LEFT) keys['a'] = false;
     if (key == GLUT_KEY_RIGHT) keys['d'] = false;
     if (key == GLUT_KEY_UP) keys['w'] = false;
-}
+    }
 
-void mouse(int button, int state, int x, int y) {
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+    void mouse(int button, int state, int x, int y) {
+        if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         int glY = WINDOW_HEIGHT - y;
 
         // --- Start button on menu ---
