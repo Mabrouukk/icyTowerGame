@@ -9,12 +9,12 @@
 const int WINDOW_WIDTH = 1200;
 const int WINDOW_HEIGHT = 800;
 const float GRAVITY = -0.0008f;
-const float JUMP_VELOCITY = 0.6f;
+const float JUMP_VELOCITY = 0.7f;
 const float MOVE_SPEED = 0.15f;
 const int INITIAL_LIVES = 3;
 const int COLLECTABLES_COUNT = 7;
-const float LAVA_INITIAL_SPEED = 0.01f;
-const float LAVA_SPEED_INCREMENT = 0.0003f;
+const float LAVA_INITIAL_SPEED = 0.02f;
+const float LAVA_SPEED_INCREMENT = 0.0004f;
 
 // Button positions
 const float startButtonX = WINDOW_WIDTH / 2 - 75;
@@ -1009,10 +1009,22 @@ void update(int value) {
                 if (col.collected) ++collectedCount;
             }
             if (collectedCount >= 5 && !key.spawned) {
-                key.spawned = true;
-               key.x = WINDOW_WIDTH / 2;
-               key.y = door.y - 50;
-           }
+    key.spawned = true;
+    
+    // Random X position (keep away from edges)
+    key.x = (rand() % (WINDOW_WIDTH - 100)) + 50;
+    
+    // Random Y position ABOVE lava (at least 100 pixels above current lava level)
+    float minY = lavaHeight + 100;  // minimum safe height above lava
+    float maxY = WINDOW_HEIGHT - 100; // not too close to top
+    
+    // Make sure minY is valid
+    if (minY < 200) minY = 200;
+    if (minY > maxY) minY = maxY - 50;
+    
+    // Random Y between minY and maxY
+    key.y = minY + (rand() % (int)(maxY - minY));
+}
         }
     }
     
